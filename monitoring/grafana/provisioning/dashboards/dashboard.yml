@@ -1,0 +1,12 @@
+
+apiVersion: 1
+
+providers:
+  - name: "Academic Petition Triage"
+    orgId: 1
+    folder: "Academic Petition Triage"
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /var/lib/grafana/dashboards

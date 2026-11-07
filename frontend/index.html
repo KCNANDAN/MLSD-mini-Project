@@ -1,0 +1,222 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0f172a">
+    <title>Academic Petition Triage</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="app-shell">
+
+        <header class="topbar">
+            <div class="brand">
+                <div class="brand-icon">A</div>
+                <div>
+                    <h1>Academic Petition Triage</h1>
+                    <p>Student petition management system</p>
+                </div>
+            </div>
+
+            <div class="system-status">
+                <span class="status-dot"></span>
+                System interface
+            </div>
+        </header>
+
+        <main class="main-content">
+
+            <section class="hero">
+                <p class="eyebrow">STUDENT SERVICES</p>
+                <h2>Submit an academic petition</h2>
+                <p>
+                    Submit your request for regulatory review.
+                    Your petition will be processed and routed
+                    based on the applicable academic provisions.
+                </p>
+            </section>
+
+            <section class="content-grid">
+
+                <div class="form-card">
+                    <div class="card-heading">
+                        <div>
+                            <h3>Petition details</h3>
+                            <p>Provide the information required for review.</p>
+                        </div>
+                        <span class="step-label">NEW REQUEST</span>
+                    </div>
+
+                    <form id="petition-form">
+
+                        <div class="form-group">
+                            <label for="student-reference">
+                                Student reference
+                            </label>
+                            <input
+                                type="text"
+                                id="student-reference"
+                                name="student_reference"
+                                placeholder="Enter your student reference"
+                                required
+                            >
+                        </div>
+
+                        <div class="form-row">
+
+                            <div class="form-group">
+                                <label for="petition-type">
+                                    Petition category
+                                </label>
+                                <select
+                                    id="petition-type"
+                                    name="petition_type"
+                                    required
+                                >
+                                    <option value="">Select category</option>
+                                    <option value="attendance">Attendance</option>
+                                    <option value="re_evaluation">Re-evaluation</option>
+                                    <option value="re_registration">Re-registration</option>
+                                    <option value="medical_leave">Medical leave</option>
+                                    <option value="grade_grievance">Grade grievance</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="admission-batch">
+                                    Admission batch
+                                </label>
+                                <input
+                                    type="text"
+                                    id="admission-batch"
+                                    name="admission_batch"
+                                    placeholder="e.g. 2024"
+                                    required
+                                >
+                            </div>
+
+                        </div>
+
+                        <div class="form-group">
+                            <label for="semester">Semester</label>
+                            <input
+                                type="number"
+                                id="semester"
+                                name="semester"
+                                min="1"
+                                max="12"
+                                placeholder="Enter semester"
+                                required
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label for="description">
+                                Petition description
+                            </label>
+                            <textarea
+                                id="description"
+                                name="description"
+                                rows="5"
+                                placeholder="Explain your petition and the circumstances..."
+                                required
+                            ></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="additional-details">
+                                Additional details
+                            </label>
+                            <textarea
+                                id="additional-details"
+                                name="additional_details"
+                                rows="3"
+                                placeholder="Provide supporting details, dates or other relevant information..."
+                            ></textarea>
+                        </div>
+
+                        <div class="notice">
+                            <strong>Important:</strong>
+                            This system provides evidence-based
+                            recommendations. Final decisions requiring
+                            committee discretion remain subject to
+                            human review.
+                        </div>
+
+                        <button type="submit" id="submit-button">
+                            Submit petition
+                            <span aria-hidden="true">→</span>
+                        </button>
+
+                        <p id="form-message" class="form-message"
+                           role="status" aria-live="polite"></p>
+
+                    </form>
+                </div>
+
+                <aside class="information-panel">
+
+                    <div class="info-card">
+                        <span class="info-number">01</span>
+                        <h3>Submit</h3>
+                        <p>
+                            Provide your petition details and
+                            relevant supporting information.
+                        </p>
+                    </div>
+
+                    <div class="info-card">
+                        <span class="info-number">02</span>
+                        <h3>Research and verification</h3>
+                        <p>
+                            AI agents retrieve applicable provisions
+                            and independently verify the evidence.
+                        </p>
+                    </div>
+
+                    <div class="info-card">
+                        <span class="info-number">03</span>
+                        <h3>Review and routing</h3>
+                        <p>
+                            Receive an evidence-backed recommendation
+                            or referral for human examination.
+                        </p>
+                    </div>
+
+                </aside>
+
+            </section>
+
+            <section id="result-section" class="result-section hidden">
+                <div class="result-header">
+                    <div>
+                        <p class="eyebrow">PETITION TRACKING</p>
+                        <h3>Submission status</h3>
+                    </div>
+                    <span id="run-status" class="status-badge">QUEUED</span>
+                </div>
+
+                <p class="run-id">
+                    Run ID: <span id="run-id"></span>
+                </p>
+
+                <div id="result-content">
+                    <p>Your petition is being processed.</p>
+                </div>
+            </section>
+
+        </main>
+
+        <footer class="footer">
+            <p>Academic Petition Triage Service · ML System Design</p>
+            <p>Evidence-backed recommendations · Human oversight</p>
+        </footer>
+
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,146 @@
+
+{
+  "uid": "petition-triage",
+  "title": "Academic Petition Triage - Operations",
+  "tags": ["academic-petition-triage", "operations", "agents"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Completed Petitions",
+      "type": "stat",
+      "gridPos": {"h": 5, "w": 6, "x": 0, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {
+          "expr": "petitions_total{status=\"completed\"}",
+          "legendFormat": "Completed"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Failed Petitions",
+      "type": "stat",
+      "gridPos": {"h": 5, "w": 6, "x": 6, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {
+          "expr": "petitions_total{status=\"failed\"} or vector(0)",
+          "legendFormat": "Failed"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Active Workers",
+      "type": "stat",
+      "gridPos": {"h": 5, "w": 6, "x": 12, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {
+          "expr": "active_workers",
+          "legendFormat": "Active workers"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Agent Executions",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 5},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {
+          "expr": "sum by (agent_name, status) (agent_executions_total)",
+          "legendFormat": "{{agent_name}} - {{status}}"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Petition Processing Latency",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 5},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {
+          "expr": "rate(petition_processing_duration_seconds_sum[5m]) / rate(petition_processing_duration_seconds_count[5m])",
+          "legendFormat": "Average processing time"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Agent Execution Latency",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 13},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {
+          "expr": "rate(agent_execution_duration_seconds_sum[5m]) / rate(agent_execution_duration_seconds_count[5m])",
+          "legendFormat": "{{agent_name}}"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "LLM Requests",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 13},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {
+          "expr": "sum by (provider, status) (llm_requests_total)",
+          "legendFormat": "{{provider}} - {{status}}"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "title": "Prompt Tokens",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 21},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {
+          "expr": "llm_tokens_total{token_type=\"prompt\"}",
+          "legendFormat": "Prompt tokens"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "title": "Completion Tokens",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 21},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {
+          "expr": "llm_tokens_total{token_type=\"completion\"}",
+          "legendFormat": "Completion tokens"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "title": "Agent Tool Calls",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 29},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {
+          "expr": "sum by (agent_name, tool_name, status) (agent_tool_calls_total)",
+          "legendFormat": "{{agent_name}} - {{tool_name}} - {{status}}"
+        }
+      ]
+    }
+  ]
+}
