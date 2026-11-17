@@ -66,11 +66,19 @@
     },
     {
       "id": 5,
-      "title": "Petition Processing Latency",
+      "title": "Petition Processing Latency (Average & p95 SLO)",
       "type": "timeseries",
       "gridPos": {"h": 8, "w": 12, "x": 12, "y": 5},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(petition_processing_duration_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p95 processing time"
+        },
+        {
+          "expr": "histogram_quantile(0.50, sum(rate(petition_processing_duration_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p50 (median) processing time"
+        },
         {
           "expr": "rate(petition_processing_duration_seconds_sum[5m]) / rate(petition_processing_duration_seconds_count[5m])",
           "legendFormat": "Average processing time"
@@ -79,14 +87,18 @@
     },
     {
       "id": 6,
-      "title": "Agent Execution Latency",
+      "title": "Agent Execution Latency (p95)",
       "type": "timeseries",
       "gridPos": {"h": 8, "w": 12, "x": 0, "y": 13},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
         {
+          "expr": "histogram_quantile(0.95, sum(rate(agent_execution_duration_seconds_bucket[5m])) by (le, agent_name))",
+          "legendFormat": "{{agent_name}} p95"
+        },
+        {
           "expr": "rate(agent_execution_duration_seconds_sum[5m]) / rate(agent_execution_duration_seconds_count[5m])",
-          "legendFormat": "{{agent_name}}"
+          "legendFormat": "{{agent_name}} average"
         }
       ]
     },

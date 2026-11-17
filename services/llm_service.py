@@ -8,6 +8,7 @@ from config.settings import get_settings
 from observability.cost_tracker import cost_tracker, LLMUsage
 from observability.metrics import record_llm_usage
 from observability.tracing import trace_span
+from services.circuit_breaker import get_circuit_breaker, CircuitBreakerOpenError
 
 
 settings = get_settings()
@@ -47,6 +48,8 @@ class LLMService:
             raise LLMServiceError(
                 f"Unsupported LLM provider: {self.provider}"
             )
+
+        self.circuit_breaker = get_circuit_breaker("groq_llm")
 
     def _record_successful_request(
         self,
@@ -108,17 +111,19 @@ class LLMService:
         ) as span:
 
             try:
-                async with httpx.AsyncClient(
-                    timeout=self.timeout
-                ) as client:
-                    response = await client.post(
-                        f"{self.base_url}/chat/completions",
-                        json=payload,
-                        headers=headers,
-                    )
+                async def _post_chat() -> dict[str, Any]:
+                    async with httpx.AsyncClient(
+                        timeout=self.timeout
+                    ) as client:
+                        response = await client.post(
+                            f"{self.base_url}/chat/completions",
+                            json=payload,
+                            headers=headers,
+                        )
+                        response.raise_for_status()
+                        return response.json()
 
-                    response.raise_for_status()
-                    data = response.json()
+                data = await self.circuit_breaker.call_async(_post_chat)
 
                 content = data["choices"][0]["message"]["content"]
 
@@ -131,6 +136,11 @@ class LLMService:
                 status = "success"
 
                 return content.strip()
+
+            except CircuitBreakerOpenError as exc:
+                raise LLMServiceError(
+                    f"LLM circuit breaker open: {str(exc)}"
+                ) from exc
 
             except httpx.TimeoutException as exc:
                 raise LLMServiceError(
@@ -208,17 +218,19 @@ class LLMService:
         ) as span:
 
             try:
-                async with httpx.AsyncClient(
-                    timeout=self.timeout
-                ) as client:
-                    response = await client.post(
-                        f"{self.base_url}/chat/completions",
-                        json=payload,
-                        headers=headers,
-                    )
+                async def _post_chat_tools() -> dict[str, Any]:
+                    async with httpx.AsyncClient(
+                        timeout=self.timeout
+                    ) as client:
+                        response = await client.post(
+                            f"{self.base_url}/chat/completions",
+                            json=payload,
+                            headers=headers,
+                        )
+                        response.raise_for_status()
+                        return response.json()
 
-                    response.raise_for_status()
-                    data = response.json()
+                data = await self.circuit_breaker.call_async(_post_chat_tools)
 
                 message = data["choices"][0]["message"]
 
@@ -231,6 +243,11 @@ class LLMService:
                 status = "success"
 
                 return message
+
+            except CircuitBreakerOpenError as exc:
+                raise LLMServiceError(
+                    f"LLM circuit breaker open: {str(exc)}"
+                ) from exc
 
             except httpx.TimeoutException as exc:
                 raise LLMServiceError(

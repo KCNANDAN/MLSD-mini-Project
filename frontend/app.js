@@ -10,6 +10,12 @@ const runStatus = document.getElementById("run-status");
 const runIdElement = document.getElementById("run-id");
 const resultContent = document.getElementById("result-content");
 
+const feedbackSection = document.getElementById("feedback-section");
+const feedbackForm = document.getElementById("feedback-form");
+const feedbackSubmitButton = document.getElementById("feedback-submit-button");
+const feedbackMessage = document.getElementById("feedback-message");
+
+let activeRunId = null;
 let pollingTimer = null;
 
 const POLLING_INTERVAL_MS = 2500;
@@ -59,7 +65,15 @@ function clearPolling() {
 
 
 function showResultSection(runId, status) {
+    activeRunId = runId;
     resultSection.classList.remove("hidden");
+
+    if (feedbackSection) {
+        feedbackSection.classList.add("hidden");
+        feedbackForm.reset();
+        feedbackMessage.textContent = "";
+        feedbackSubmitButton.disabled = false;
+    }
 
     runIdElement.textContent = runId;
 
@@ -337,6 +351,10 @@ async function pollRunStatus(runId, attempt = 0) {
                 "Petition processing completed successfully."
             );
 
+            if (feedbackSection) {
+                feedbackSection.classList.remove("hidden");
+            }
+
             return;
         }
 
@@ -349,6 +367,10 @@ async function pollRunStatus(runId, attempt = 0) {
                 "Petition processing failed.",
                 true
             );
+
+            if (feedbackSection) {
+                feedbackSection.classList.remove("hidden");
+            }
 
             return;
         }
@@ -442,6 +464,76 @@ petitionForm.addEventListener("submit", async (event) => {
         setSubmitting(false);
     }
 });
+
+
+// --------------------------------------------------
+// Feedback submission
+// --------------------------------------------------
+
+async function submitFeedback(payload) {
+    const response = await fetch(
+        `${API_BASE_URL}/feedback`,
+        {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+        }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        throw new Error(
+            data.detail || "Unable to submit your feedback."
+        );
+    }
+
+    return data;
+}
+
+if (feedbackForm) {
+    feedbackForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        if (!activeRunId) {
+            feedbackMessage.textContent = "No active petition run found.";
+            feedbackMessage.style.color = "#c0392b";
+            return;
+        }
+
+        const formData = new FormData(feedbackForm);
+        const satisfactory = formData.get("satisfactory") === "true";
+        const reason = (formData.get("reason") || "").trim();
+
+        if (reason.length < 3) {
+            feedbackMessage.textContent = "Please provide at least 3 characters for feedback reason.";
+            feedbackMessage.style.color = "#c0392b";
+            return;
+        }
+
+        feedbackSubmitButton.disabled = true;
+        feedbackMessage.textContent = "Submitting feedback...";
+        feedbackMessage.style.color = "#718096";
+
+        try {
+            await submitFeedback({
+                run_id: activeRunId,
+                satisfactory,
+                reason,
+            });
+
+            feedbackMessage.textContent = "Thank you! Your feedback has been recorded successfully.";
+            feedbackMessage.style.color = "#16865b";
+            feedbackForm.reset();
+        } catch (error) {
+            feedbackSubmitButton.disabled = false;
+            feedbackMessage.textContent = `Feedback submission failed: ${error.message}`;
+            feedbackMessage.style.color = "#c0392b";
+        }
+    });
+}
 
 
 // --------------------------------------------------

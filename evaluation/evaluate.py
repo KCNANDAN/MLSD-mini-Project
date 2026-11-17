@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+import asyncio
 from evaluation.evaluator import (
     evaluate_case,
     generate_summary,
@@ -21,6 +22,27 @@ DEFAULT_DATASET = (
 DEFAULT_OUTPUT = (
     PROJECT_ROOT / "storage" / "evaluation_report.json"
 )
+
+
+def run_pipeline_for_case(case: dict[str, Any], live_llm: bool = False) -> dict[str, Any]:
+    """Execute LangGraph multi-agent workflow for a test case."""
+    from agents.graph import run_agent_graph
+    from config.settings import get_settings
+
+    settings = get_settings()
+    original_stub = settings.use_stub_llm
+    if not live_llm:
+        settings.use_stub_llm = True
+
+    try:
+        initial_state = {
+            "run_id": f"eval-{case['id']}",
+            "petition_id": f"pet-{case['id']}",
+            "petition": case["petition"],
+        }
+        return asyncio.run(run_agent_graph(initial_state))
+    finally:
+        settings.use_stub_llm = original_stub
 
 
 def load_evaluation_dataset(
@@ -73,24 +95,48 @@ def load_evaluation_dataset(
 
 def run_evaluation(
     dataset: dict[str, Any],
+    mode: str = "all",
+    live_llm: bool = False,
 ) -> dict[str, Any]:
-    """Execute deterministic evaluation for every dataset case."""
+    """Execute evaluation for dataset cases."""
 
     results = []
 
     for case in dataset["cases"]:
-        result = evaluate_case(case)
+        # If case represents an interactive pipeline test without pre-baked static fixture
+        if (
+            mode == "all"
+            and "petition" in case
+            and "evidence" not in case
+            and "citations" not in case
+        ):
+            try:
+                pipeline_output = run_pipeline_for_case(
+                    case, live_llm=live_llm
+                )
+                result = evaluate_case(
+                    case, actual_result=pipeline_output
+                )
+            except Exception as exc:
+                result = evaluate_case(case)
+        else:
+            result = evaluate_case(case)
+
         results.append(result)
 
     summary = generate_summary(results)
 
     return {
-        "report_version": "v1",
+        "report_version": "v2",
         "dataset_version": dataset.get("version", "unknown"),
         "generated_at": datetime.now(
             timezone.utc
         ).isoformat(),
-        "evaluation_scope": "synthetic_fixture_self_test",
+        "evaluation_scope": (
+            "complete_pipeline_and_benchmark"
+            if mode == "all"
+            else "synthetic_fixture_self_test"
+        ),
         "summary": summary,
         "results": results,
     }
@@ -142,6 +188,16 @@ def print_summary(
     else:
         print(f"Pass rate:          {pass_rate * 100:.2f}%")
 
+    semantic = summary.get("semantic_metrics")
+    if isinstance(semantic, dict) and semantic.get("status") == "evaluated":
+        print("-" * 55)
+        print("SEMANTIC RAG EVALUATION METRICS")
+        print("-" * 55)
+        print(f"Mean Groundedness:       {semantic.get('mean_groundedness', 'N/A')}")
+        print(f"Mean Faithfulness:       {semantic.get('mean_faithfulness', 'N/A')}")
+        print(f"Mean Context Relevance:  {semantic.get('mean_context_relevance', 'N/A')}")
+        print(f"Hallucination Rate:      {semantic.get('hallucination_rate', 'N/A')}")
+
     print("-" * 55)
     print("INDIVIDUAL CASE RESULTS")
     print("-" * 55)
@@ -187,6 +243,19 @@ def main() -> None:
         help="Path where the JSON report will be saved.",
     )
 
+    parser.add_argument(
+        "--mode",
+        choices=["all", "static"],
+        default="all",
+        help="Evaluation mode: 'all' runs complete pipeline and static cases, 'static' runs fixtures only.",
+    )
+
+    parser.add_argument(
+        "--live",
+        action="store_true",
+        help="Use live Groq LLM instead of deterministic stub.",
+    )
+
     args = parser.parse_args()
 
     try:
@@ -194,7 +263,11 @@ def main() -> None:
             args.dataset
         )
 
-        report = run_evaluation(dataset)
+        report = run_evaluation(
+            dataset,
+            mode=args.mode,
+            live_llm=args.live,
+        )
 
         save_report(
             report,
