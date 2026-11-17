@@ -206,6 +206,43 @@
                 <div id="result-content">
                     <p>Your petition is being processed.</p>
                 </div>
+
+                <div id="feedback-section" class="feedback-section hidden">
+                    <div class="feedback-card">
+                        <div class="feedback-heading">
+                            <h4>Submit Feedback</h4>
+                            <p>Was this recommendation and explanation satisfactory?</p>
+                        </div>
+                        <form id="feedback-form">
+                            <div class="feedback-options">
+                                <label class="feedback-option">
+                                    <input type="radio" name="satisfactory" value="true" required>
+                                    <span> Satisfactory</span>
+                                </label>
+                                <label class="feedback-option">
+                                    <input type="radio" name="satisfactory" value="false" required>
+                                    <span> Unsatisfactory</span>
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label for="feedback-reason">Reason / Comments</label>
+                                <textarea
+                                    id="feedback-reason"
+                                    name="reason"
+                                    rows="3"
+                                    placeholder="Explain whether the decision or citation was clear and helpful..."
+                                    required
+                                    minlength="3"
+                                    maxlength="1000"
+                                ></textarea>
+                            </div>
+                            <button type="submit" id="feedback-submit-button" class="feedback-btn">
+                                Submit feedback
+                            </button>
+                            <p id="feedback-message" class="feedback-message" role="status" aria-live="polite"></p>
+                        </form>
+                    </div>
+                </div>
             </section>
 
         </main>

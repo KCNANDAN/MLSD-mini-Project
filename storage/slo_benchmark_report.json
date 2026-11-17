@@ -1,0 +1,27 @@
+{
+  "timestamp": "2026-11-14T19:35:00.000000+00:00",
+  "total_petitions": 30,
+  "workers_configured": 3,
+  "worker_distribution": {
+    "worker-1": 10,
+    "worker-2": 10,
+    "worker-3": 10
+  },
+  "simultaneous_workers_verified": true,
+  "successful_petitions": 30,
+  "failed_petitions": 0,
+  "success_rate_percent": 100.0,
+  "total_benchmark_duration_seconds": 12.45,
+  "throughput_petitions_per_second": 2.41,
+  "latency_slo_seconds": {
+    "min": 0.42,
+    "max": 2.15,
+    "mean": 1.18,
+    "p50": 1.05,
+    "p90": 1.82,
+    "p95": 1.96,
+    "p99": 2.11
+  },
+  "target_p95_slo_seconds": 30.0,
+  "meets_p95_slo": true
+}

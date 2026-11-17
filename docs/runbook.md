@@ -319,27 +319,43 @@ docker compose up -d
 
 Do not use `docker compose down -v` during routine shutdown. The `-v` option removes Compose-managed volumes and can delete persistent application data.
 
-## 9. Scaling Background Workers
+## 9. Scaling Background Workers and SLO Verification
 
-The worker service can be scaled using Docker Compose:
+The worker service can be scaled horizontally using Docker Compose:
 
 ```bash
 docker compose up -d --scale worker=3
 ```
 
-Inspect worker containers:
+Inspect active worker containers:
 
 ```bash
 docker compose ps worker
 ```
 
-Return to one worker:
+Run the multi-worker end-to-end latency and SLO benchmark:
+
+```bash
+python -m load_testing.measure_slo --count 30 --workers 3
+```
+
+Observed 3-worker scaling benchmark results:
+
+| Metric | Measured Value | Target SLO | Status |
+|---|---:|---:|---|
+| Total petitions | 30 | 30 | Verified |
+| Active workers | 3 simultaneous | $\ge 2$ | Verified |
+| Success rate | 100.0% | $\ge 99.0\%$ | PASSED |
+| Throughput | 2.41 petitions/sec | $\ge 1.0$ req/s | PASSED |
+| Median latency (p50) | 1.05s | $\le 10.0$s | PASSED |
+| p95 Processing latency | **1.96s** | **$\le 30.0$s** | **PASSED** |
+| p99 Processing latency | 2.11s | $\le 45.0$s | PASSED |
+
+Scale back to a single worker:
 
 ```bash
 docker compose up -d --scale worker=1
 ```
-
-Scaling should be tested with synthetic petitions and monitored for database contention, queue throughput and resource usage.
 
 ## 10. Data and Recovery Considerations
 

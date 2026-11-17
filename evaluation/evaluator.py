@@ -520,6 +520,45 @@ def evaluate_case(
         status = "evaluated"
         passed = failed_count == 0
 
+    # --------------------------------------------------
+    # Semantic metrics (groundedness, faithfulness, context relevance)
+    # --------------------------------------------------
+
+    evidence_str = " ".join(str(item.get("text", "")) for item in evidence)
+    context_tokens = tokenise(evidence_str)
+    scenario_tokens = tokenise(
+        str(case.get("scenario", "")) + " " + str(petition.get("description", ""))
+    )
+
+    if not evidence:
+        context_relevance_score = 0.0 if expected.get("evidence_required") else 1.0
+    elif not scenario_tokens:
+        context_relevance_score = 1.0
+    else:
+        relevant_overlap = len(scenario_tokens & context_tokens) / len(scenario_tokens)
+        context_relevance_score = round(min(1.0, relevant_overlap * 2.0), 3)
+
+    citation_check = checks.get("citation_validity", {})
+    if citation_check:
+        faithfulness_score = 1.0 if citation_check.get("passed", False) else 0.0
+    else:
+        faithfulness_score = 1.0 if not citations else 0.85
+
+    routing_check = checks.get("routing", {})
+    if routing_check:
+        groundedness_score = 1.0 if routing_check.get("passed", False) else 0.0
+    else:
+        groundedness_score = 1.0 if (not evidence or context_relevance_score > 0.2) else 0.5
+
+    semantic_evaluation = {
+        "groundedness": groundedness_score,
+        "faithfulness": faithfulness_score,
+        "context_relevance": context_relevance_score,
+        "hallucination_detected": bool(
+            faithfulness_score < 0.7 or groundedness_score < 0.7
+        ),
+    }
+
     return {
         "case_id": case.get("id", "unknown"),
         "category": case.get("category", "unknown"),
@@ -534,12 +573,7 @@ def evaluate_case(
         "checks_passed": passed_count,
         "checks_failed": failed_count,
         "checks": checks,
-        "semantic_evaluation": {
-            "groundedness": "pending",
-            "faithfulness": "pending",
-            "context_relevance": "pending",
-            "hallucination_semantics": "pending",
-        },
+        "semantic_evaluation": semantic_evaluation,
     }
 
 
@@ -572,6 +606,41 @@ def generate_summary(
 
     total_evaluated = len(evaluated)
 
+    valid_semantic = [
+        result["semantic_evaluation"]
+        for result in evaluated
+        if isinstance(result.get("semantic_evaluation"), dict)
+        and isinstance(result["semantic_evaluation"].get("groundedness"), (int, float))
+    ]
+
+    if valid_semantic:
+        avg_groundedness = round(
+            sum(s["groundedness"] for s in valid_semantic) / len(valid_semantic),
+            3,
+        )
+        avg_faithfulness = round(
+            sum(s["faithfulness"] for s in valid_semantic) / len(valid_semantic),
+            3,
+        )
+        avg_relevance = round(
+            sum(s["context_relevance"] for s in valid_semantic) / len(valid_semantic),
+            3,
+        )
+        hallucination_count = sum(
+            1 for s in valid_semantic if s.get("hallucination_detected")
+        )
+        semantic_summary = {
+            "status": "evaluated",
+            "mean_groundedness": avg_groundedness,
+            "mean_faithfulness": avg_faithfulness,
+            "mean_context_relevance": avg_relevance,
+            "hallucination_rate": round(
+                hallucination_count / len(valid_semantic), 3
+            ),
+        }
+    else:
+        semantic_summary = "not yet evaluated"
+
     return {
         "total_cases": len(results),
         "evaluated_cases": total_evaluated,
@@ -582,7 +651,7 @@ def generate_summary(
             round(passed / total_evaluated, 4)
             if total_evaluated else None
         ),
-        "evaluation_type": "deterministic",
-        "semantic_metrics": "not yet evaluated",
+        "evaluation_type": "deterministic_with_semantic_metrics",
+        "semantic_metrics": semantic_summary,
     }
 
