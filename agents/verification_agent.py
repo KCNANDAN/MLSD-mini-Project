@@ -2,6 +2,7 @@
 import json
 from pathlib import Path
 from typing import Any
+
 from observability.tracing import observe_agent
 import yaml
 
@@ -48,16 +49,19 @@ def verify_citations(
     retrieved_provisions: list[dict[str, Any]],
 ) -> tuple[list[dict[str, Any]], list[str]]:
     """
-    Check whether each citation can be matched to retrieved evidence.
-
-    This is a deterministic existence check. The LLM performs the
-    separate semantic check of whether the evidence supports a claim.
+    Verify citation references, document IDs and supplied quotations
+    against retrieved evidence.
     """
 
     verified = []
     issues = []
 
     for citation in citations:
+
+        if not isinstance(citation, dict):
+            issues.append("Citation must be a dictionary.")
+            continue
+
         reference = _normalise_text(
             citation.get("clause_reference")
             or citation.get("reference")
@@ -72,12 +76,15 @@ def verify_citations(
         )
 
         if not reference and not citation_text:
-            issues.append("A citation contains neither a clause reference nor text.")
+            issues.append(
+                "A citation contains neither a clause reference nor text."
+            )
             continue
 
         matching_provision = None
 
         for provision in retrieved_provisions:
+
             provision_reference = _normalise_text(
                 provision.get("clause_reference")
             )
@@ -106,9 +113,17 @@ def verify_citations(
                 or document_id == provision_document
             )
 
+            # A matching clause reference alone must not validate
+            # an inaccurate quotation supplied with that citation.
+            quotation_matches = (
+                not citation_text
+                or citation_text in provision_text
+            )
+
             if (
                 (reference_matches or text_matches)
                 and document_matches
+                and quotation_matches
             ):
                 matching_provision = provision
                 break
@@ -128,16 +143,17 @@ def verify_citations(
                 "page_number": matching_provision.get("page_number"),
                 "verified": True,
             })
+
         else:
             issues.append(
-                f"Citation could not be matched to retrieved evidence: "
+                "Citation could not be matched to retrieved evidence: "
                 f"{reference or citation_text[:100]}"
             )
 
     return verified, issues
 
 
-def _extract_json(content: str) -> dict[str, Any]:
+def _extract_json(content: str | None) -> dict[str, Any]:
     """Safely parse the Verification Agent's JSON response."""
 
     if not content:
@@ -268,10 +284,10 @@ async def verification_agent(
     - Treat citation existence and claim support as separate checks.
     - A citation that exists does not automatically prove a claim.
     - Identify whether modifying, exception or condonation provisions
-    are missing from the retrieved evidence.
+      are missing from the retrieved evidence.
     - If evidence is insufficient, verification_passed must be false.
     - If provisions conflict or committee discretion is reserved,
-    require human examination officer review.
+      require human examination officer review.
     """
 
     task_prompt += f"""
@@ -339,7 +355,7 @@ async def verification_agent(
         verification_data.get("verification_passed") is True
         and verification_data.get("claims_supported") is True
         and verification_data.get("recommendation_supported") is True
-    )   
+    )
 
     no_citation_issues = (
         len(citations) > 0
@@ -417,11 +433,11 @@ async def verification_agent(
         "agent_steps": state.get("agent_steps", 0) + 1,
         "errors": errors,
         "verified_recommendation": (
-        verification_data.get(
-            "verified_recommendation",
-            "refer-to-committee",
-        )
-        if verification_passed
+            verification_data.get(
+                "verified_recommendation",
+                "refer-to-committee",
+            )
+            if verification_passed
             else "refer-to-committee"
         ),
     }

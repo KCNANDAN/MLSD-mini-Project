@@ -1,0 +1,15 @@
+
+DOCUMENT: PES University Current Official FAQ
+SOURCE: https://pes.edu/faqs/
+SOURCE TYPE: Official university website FAQ
+DATE ACCESSED: 2026-11-08
+SCOPE: General PES University information. Supplementary reference, not a complete B.Tech examination rulebook.
+
+QUESTION: What is the grading system followed at PES University?
+ANSWER: PES University follows a 10 point grading system incorporating relative and absolute grading.
+
+QUESTION: What is the level of attendance required to be eligible to take the university exams?
+ANSWER: 80% attendance is mandatory for a student to take the exam.
+
+LIMITATIONS:
+This FAQ extract does not specify detailed attendance condonation, medical relaxation, CIE/SEE examination weightage, revaluation rules or appeal procedures. Refer such cases for human examination officer review unless supported by another verified regulation.
